@@ -68,6 +68,12 @@
         /* 7. 感染培養 */
         .infect-item { background: #fff5f8; border-left: 4px solid var(--infect); padding: 5px 10px; margin-bottom: 4px; border-radius: 0 4px 4px 0; }
 
+        /* 8. I/O 平衡 (新增) */
+        .io-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; text-align: center; }
+        .io-box { padding: 5px; border-radius: 4px; background: #f8fafc; border: 1px solid #e2e8f0; }
+        .io-label { font-size: 0.7rem; color: #64748b; }
+        .io-val { font-size: 1.1rem; font-weight: bold; color: var(--primary); }
+
         /* 中間人形圖互動 */
         .middle-panel { position: relative; background: #fff; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: center; align-items: center; overflow: hidden; }
         .btn-group { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 100; }
@@ -198,7 +204,7 @@
         </div>
 
         <div class="card" style="border-left: 4px solid var(--danger)">
-            <div class="card-header" style="color:var(--danger)">6. 極端檢驗值 / 處理</div>
+            <div class="card-header">6. 極端檢驗值 / 處理</div>
             <div class="lab-item">
                 <div style="display:flex; justify-content:space-between"><span>Potassium (K+)</span><b style="color:var(--danger)">2.8 ↓</b></div>
                 <small>處理: 已補 KCl 20ml (18:00)</small>
@@ -210,13 +216,27 @@
         </div>
 
         <div class="card" style="border-left: 4px solid var(--infect)">
-            <div class="card-header" style="color:var(--infect)">7. 感染與抗生素追蹤</div>
+            <div class="card-header">7. 感染與抗生素追蹤</div>
             <div class="infect-item">
                 <small>03/28 血液培養:</small><br><b><span class="blink">Pending (檢驗中)</span></b>
             </div>
             <div class="infect-item" style="background:#fdf2f5">
                 <small>03/25 痰液培養:</small><br><b>A. baumannii (MDR)</b><br>
                 <small style="color:var(--infect)">現抗: Meropenem (D5)</small>
+            </div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--primary)">
+            <div class="card-header">8. 水分平衡 (I/O Balance)</div>
+            <div class="io-grid">
+                <div class="io-box">
+                    <div class="io-label">當班平衡 (8H)</div>
+                    <div class="io-val">+450 ml</div>
+                </div>
+                <div class="io-box">
+                    <div class="io-label">總平衡 (24H)</div>
+                    <div class="io-val" style="color:var(--danger)">+2,800 ml</div>
+                </div>
             </div>
         </div>
     </div>

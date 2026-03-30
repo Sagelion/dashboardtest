@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>ICU 護理師臨床白板 -</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>
+        :root {
+            --bg: #f8fafc;
+            --card: #ffffff;
+            --header: #ffffff;
+            --primary: #007bff; 
+            --tube: #28a745; 
+            --wound: #fd7e14; 
+            --danger: #dc3545;
+            --resp: #17a2b8;
+            --special: #6f42c1;
+            --nutrition: #8c6d05;
+            --infect: #d63384;
+            --text: #1e293b;
+            --border: #e2e8f0;
+        }
+
+        body { font-family: 'Segoe UI', "Microsoft JhengHei", sans-serif; background: var(--bg); color: var(--text); margin: 0; overflow: hidden; font-size: 13px; line-height: 1.4; }
+
+        /* 一、頂部橫幅：病人資訊 */
+        header { 
+            background: var(--header); padding: 8px 15px; border-bottom: 2px solid var(--border);
+            display: grid; grid-template-columns: 280px 1fr 220px; gap: 15px; align-items: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+        .p-name { font-size: 1.4rem; font-weight: bold; }
+        .diag-box { font-size: 0.85rem; border-left: 4px solid var(--primary); padding-left: 12px; }
+        .dnr-tag { background: #6f42c1; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; }
+
+        .grid-container { display: grid; grid-template-columns: 310px 1fr 310px; height: calc(100vh - 75px); padding: 8px; gap: 8px; }
+        .col { display: flex; flex-direction: column; gap: 8px; overflow-y: auto; }
+
+        .card { background: var(--card); border-radius: 8px; border: 1px solid var(--border); padding: 10px; position: relative; }
+        .card-header { font-size: 0.85rem; color: var(--primary); font-weight: bold; margin-bottom: 6px; border-bottom: 1px solid #eee; padding-bottom: 4px; display: flex; justify-content: space-between; }
+
+        /* 1. GCS + MP */
+        .gcs-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; background: #f8f9fa; padding: 6px; border-radius: 4px; }
+        .gcs-val { font-size: 1.1rem; font-weight: bold; }
+        .mp-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; margin-top: 5px; font-size: 0.8rem; border-top: 1px dashed #ddd; padding-top: 5px; }
+
+        /* 2. Vital Signs */
+        .vs-row { margin-bottom: 6px; border-bottom: 1px solid #f1f5f9; padding-bottom: 4px; }
+        .vs-val { font-size: 1.6rem; font-weight: 800; font-family: 'Arial'; line-height: 1.1; }
+        .vs-trend-text { font-size: 0.75rem; color: var(--danger); font-weight: bold; }
+
+        /* 3. 使用中藥物 */
+        .med-run { background: #fffaf0; border-left: 4px solid #ed8936; padding: 6px; margin-bottom: 4px; border-radius: 0 4px 4px 0; }
+        .med-rate { font-weight: bold; color: var(--danger); font-size: 0.95rem; float: right; }
+
+        /* 4. ECMO/CVVH (移至左側) */
+        .spec-item { background: #fdfaff; border-left: 4px solid var(--special); padding: 6px; border-radius: 4px; margin-bottom: 4px; }
+        .spec-lbl { font-size: 0.7rem; color: var(--special); font-weight: bold; }
+
+        /* 5. 呼吸器 + SBT (右側) */
+        .resp-box { background: #f0faff; border-radius: 4px; padding: 8px; border: 1px solid #c3e8ff; }
+        .sbt-result { background: #e6fffa; border-left: 4px solid #38b2ac; padding: 6px; margin-top: 6px; font-size: 0.75rem; }
+
+        /* 6. 極端檢驗值 */
+        .lab-item { background: #fff5f5; border: 1px solid #feb2b2; padding: 5px 8px; border-radius: 4px; margin-bottom: 4px; }
+        .lab-val { font-weight: bold; color: var(--danger); }
+
+        /* 7. 感染培養 */
+        .infect-item { background: #fff5f8; border-left: 4px solid var(--infect); padding: 5px 10px; margin-bottom: 4px; border-radius: 0 4px 4px 0; }
+
+        /* 中間人形圖互動 */
+        .middle-panel { position: relative; background: #fff; border-radius: 8px; border: 1px solid var(--border); display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        .btn-group { position: absolute; top: 10px; left: 10px; display: flex; flex-direction: column; gap: 6px; z-index: 100; }
+        .btn-main { border: none; padding: 8px 15px; border-radius: 4px; cursor: pointer; font-weight: bold; color: white; font-size: 0.8rem; }
+        .body-svg { height: 85%; opacity: 0.8; filter: grayscale(0.8); }
+
+        .tag { position: absolute; background: white; padding: 6px; border-radius: 4px; font-size: 0.75rem; display: none; z-index: 110; box-shadow: 0 4px 10px rgba(0,0,0,0.15); border: 1px solid #ddd; width: 150px; }
+        .tag-img { width: 100%; height: 60px; background: #eee; margin-top: 4px; border-radius: 3px; object-fit: cover; }
+        .dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; border: 1px solid #fff; z-index: 105; transform: translate(-50%, -50%); }
+
+        .blink { animation: blink-red 1.2s infinite; }
+        @keyframes blink-red { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+    </style>
+</head>
+<body>
+
+<header>
+    <div>
+        <span class="p-name">王大明 (男 / 85歲)</span><br>
+        <small>床號: ICU-05 | ID: A123456789 | 175cm / 68kg</small>
+    </div>
+    <div class="diag-box">
+        <strong>診斷:</strong> 敗血性休克 / 肺炎 / ARDS (D10)<br>
+        <strong>手術:</strong> s/p Exploratory Laparotomy (03/22) | <span class="dnr-tag">DNR: 已簽署</span>
+    </div>
+    <div style="text-align: right; font-size: 0.8rem;">
+        入院日: 03/20 | 主治: 陳醫師<br>
+        <b style="color:var(--danger)">隔離: MRSA (Contact)</b>
+    </div>
+</header>
+
+<div class="grid-container">
+    <div class="col">
+        <div class="card">
+            <div class="card-header">1. 神經評估 (CNS / MP)</div>
+            <div class="gcs-grid">
+                <div><small>GCS分數</small><div class="gcs-val">E2VTM5 (T)</div></div>
+                <div><small>鎮靜 RASS</small><div class="gcs-val">-2</div></div>
+                <div><small>左瞳孔</small><div class="gcs-val">2.0+</div></div>
+                <div><small>右瞳孔</small><div class="gcs-val">2.0+</div></div>
+            </div>
+            <div class="mp-grid">
+                <div>右上: 4 / 左上: 4</div>
+                <div>右下: 3 / 左下: 3</div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">2. 生命徵象 (8HR 變化)</div>
+            <div class="vs-row">
+                <div style="display:flex; justify-content:space-between"><span>ABP (A-line)</span><span class="vs-val" style="color:var(--danger)">92/48</span></div>
+                <div class="vs-trend-text">▼ 8hr前 135/70 驟降 | MAP: 62</div>
+            </div>
+            <div class="vs-row">
+                <div style="display:flex; justify-content:space-between"><span>心跳 (HR)</span><span class="vs-val">122</span></div>
+            </div>
+            <div style="display:grid; grid-template-columns: 1fr 1fr; gap:10px;">
+                <div><span>體溫 (T)</span><br><b style="font-size:1.2rem">39.2</b></div>
+                <div><span>SpO2</span><br><b style="font-size:1.2rem; color:var(--resp)">92%</b></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header">3. 使用中藥物 / 點滴</div>
+            <div class="med-run">
+                <small>Norepinephrine</small><span class="med-rate">0.3 mcg/kg/min</span>
+            </div>
+            <div class="med-run" style="border-left-color:var(--primary)">
+                <small>Propofol</small><span class="med-rate" style="color:var(--primary)">10 ml/hr</span>
+            </div>
+        </div>
+
+        <div class="card" style="border-top: 4px solid var(--special)">
+            <div class="card-header" style="color:var(--special)">4. 特殊支持 (ECMO / CVVH)</div>
+            <div class="spec-item">
+                <span class="spec-lbl">V-A ECMO (Running)</span>
+                <div style="display:flex; justify-content:space-between"><b>Flow: 3.4 LPM</b> <b>RPM: 2900</b></div>
+            </div>
+            <div class="spec-item">
+                <span class="spec-lbl">CVVH (RRT)</span>
+                <div style="display:flex; justify-content:space-between"><b>UF: 100 ml/h</b> <b>已脫: 850ml</b></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="middle-panel">
+        <div class="btn-group">
+            <button class="btn-main" style="background:var(--tube)" onclick="toggle('tube')">展開管路</button>
+            <button class="btn-main" style="background:var(--wound)" onclick="toggle('wound')">展開傷口</button>
+            <button class="btn-main" style="background:#6c757d" onclick="toggle('clear')">重置圖層</button>
+        </div>
+        <svg class="body-svg" viewBox="0 0 200 550"><path d="M100,30 C115,30 125,40 125,60 L125,100 L165,135 L155,240 L135,210 L135,480 L115,480 L100,320 L85,480 L65,480 L65,210 L45,240 L35,135 L75,100 L75,60 C75,40 85,30 100,30 Z" fill="#f1f3f5" stroke="#dee2e6" stroke-width="2"/></svg>
+        
+        <div class="dot" style="top:15%; left:50%; background:var(--tube)"></div>
+        <div class="tag lab-tube" style="top:10%; left:55%; border-left:4px solid var(--tube)"><b>ETT 7.5Fr</b><br>深 22cm | On: 03/25</div>
+
+        <div class="dot" style="top:18%; left:50%; background:var(--tube)"></div>
+        <div class="tag lab-tube" style="top:16%; left:25%; border-left:4px solid var(--tube)"><b>NG 14Fr</b><br>深 55cm | On: 03/20</div>
+
+        <div class="dot" style="top:52%; left:52%; background:var(--tube)"></div>
+        <div class="tag lab-tube" style="top:55%; left:62%; border-left:4px solid var(--tube)"><b>Foley 16Fr</b><br>On: 03/20 | 積尿清</div>
+
+        <div class="dot" style="top:50%; left:50%; background:var(--wound)"></div>
+        <div class="tag lab-wound" style="top:47%; left:65%; border-left:4px solid var(--wound)"><b>Sacral PU</b><br>Stage III | 3x4cm<img class="tag-img" src="https://via.placeholder.com/120x60/fd7e14/ffffff?text=Wound"></div>
+
+        <div class="dot" style="top:38%; left:52%; background:var(--wound)"></div>
+        <div class="tag lab-wound" style="top:35%; left:65%; border-left:4px solid var(--wound)"><b>腹部 Op Wound</b><br>Dry / Clean</div>
+
+        <div class="dot" style="top:85%; left:45%; background:var(--wound)"></div>
+        <div class="tag lab-wound" style="top:82%; left:55%; border-left:4px solid var(--wound)"><b>左足跟 PU</b><br>Stage I | 2x2cm</div>
+    </div>
+
+    <div class="col">
+        <div class="card" style="border-top: 4px solid var(--resp)">
+            <div class="card-header">5. 呼吸器設定 / SBT</div>
+            <div class="resp-box">
+                <div style="display:grid; grid-template-columns: 1fr 1fr; gap:4px; font-size:0.8rem;">
+                    <div>模式: <b>PC-CMV</b></div>
+                    <div>FiO2: <b style="color:var(--danger)">60%</b></div>
+                    <div>PEEP/PC: <b>10/14</b></div>
+                    <div>呼吸: <b>22</b></div>
+                </div>
+                <div class="sbt-result">
+                    <b>最近一次 SBT (09:00):</b> T-piece 30min<br>
+                    結果: <span style="color:var(--danger)">失敗 (RR>35)</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="card" style="border-left: 4px solid var(--danger)">
+            <div class="card-header" style="color:var(--danger)">6. 極端檢驗值 / 處理</div>
+            <div class="lab-item">
+                <div style="display:flex; justify-content:space-between"><span>Potassium (K+)</span><b style="color:var(--danger)">2.8 ↓</b></div>
+                <small>處理: 已補 KCl 20ml (18:00)</small>
+            </div>
+            <div class="lab-item">
+                <div style="display:flex; justify-content:space-between"><span>Hb</span><b style="color:var(--danger)">7.2 ↓</b></div>
+                <small>處理: 輸血 PRBC 2U 中</small>
+            </div>
+        </div>
+
+        <div class="card" style="border-left: 4px solid var(--infect)">
+            <div class="card-header" style="color:var(--infect)">7. 感染與抗生素追蹤</div>
+            <div class="infect-item">
+                <small>03/28 血液培養:</small><br><b><span class="blink">Pending (檢驗中)</span></b>
+            </div>
+            <div class="infect-item" style="background:#fdf2f5">
+                <small>03/25 痰液培養:</small><br><b>A. baumannii (MDR)</b><br>
+                <small style="color:var(--infect)">現抗: Meropenem (D5)</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    function toggle(type) {
+        const tubes = document.querySelectorAll('.lab-tube');
+        const wounds = document.querySelectorAll('.lab-wound');
+        if (type === 'tube') {
+            tubes.forEach(el => el.style.display = 'block');
+            wounds.forEach(el => el.style.display = 'none');
+        } else if (type === 'wound') {
+            tubes.forEach(el => el.style.display = 'none');
+            wounds.forEach(el => el.style.display = 'block');
+        } else {
+            tubes.forEach(el => el.style.display = 'none');
+            wounds.forEach(el => el.style.display = 'none');
+        }
+    }
+</script>
+
+</body>
+</html>
